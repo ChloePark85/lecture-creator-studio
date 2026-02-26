@@ -42,18 +42,28 @@ const ProjectWizard = () => {
     const finalTitle = title.trim() || "제목 없음";
     const finalScript = script.trim() || "내용 없음";
     
+    console.log('handleScriptSubmit', { finalTitle, finalScript, projectId });
+    
     if (!projectId) {
+      console.log('Creating new project...');
       createProject.mutate({ title: finalTitle, script: finalScript }, {
         onSuccess: (newProject) => {
+          console.log('Project created successfully:', newProject);
           setProjectId(newProject.id);
           const newSlides = autoSplitScript(finalScript);
+          console.log('Slides generated:', newSlides);
           setSlides(newSlides);
           updateProject.mutate({ id: newProject.id, updates: { slides: newSlides } });
           setStep(1);
         },
+        onError: (error) => {
+          console.error('Failed to create project:', error);
+          alert('프로젝트 생성 실패: ' + error.message);
+        }
       });
     } else {
       // If project already exists, just update script and slides
+      console.log('Updating existing project...');
       const newSlides = autoSplitScript(finalScript);
       setSlides(newSlides);
       updateProject.mutate({ id: projectId, updates: { title: finalTitle, script: finalScript, slides: newSlides } });
@@ -62,9 +72,12 @@ const ProjectWizard = () => {
   };
 
   const handleNext = () => {
+    console.log('handleNext clicked', { step, title, script });
     if (step === 0) {
+      console.log('Submitting script...');
       handleScriptSubmit(title, script);
     } else if (step < 2) {
+      console.log('Moving to next step...');
       setStep(step + 1);
     }
   };
