@@ -59,3 +59,24 @@ create policy "Users can delete own projects"
   on projects for delete
   using (auth.uid() = user_id);
 ```
+
+## OpenAI TTS Setup
+
+1. Get OpenAI API key from https://platform.openai.com/api-keys
+2. Add to `.env.local`:
+   ```
+   VITE_OPENAI_API_KEY=sk-...
+   ```
+
+## Known Limitations (MVP)
+
+- Video rendering is simulated (Mock)
+- Actual FFmpeg rendering requires backend server
+- TTS uses OpenAI API (costs apply)
+
+## Future: Real Video Rendering
+
+For production, implement:
+- Backend API (Node.js + FFmpeg)
+- Or: AWS Lambda + FFmpeg layer
+- Or: Cloudflare Workers + FFmpeg WASM

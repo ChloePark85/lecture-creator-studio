@@ -7,6 +7,8 @@ import StepVoice from "@/components/wizard/StepVoice";
 import type { Slide, ProjectSettings, SlideTemplate, ColorTheme, VoiceType } from "@/types/project";
 import { useCreateProject, useUpdateProject } from '@/hooks/useProjects';
 import { autoSplitScript } from '@/lib/slides';
+import { generateTTS } from '@/lib/tts';
+import { startRender } from '@/lib/render';
 
 const STEPS = [
   { label: "스크립트 입력", icon: FileText },
@@ -62,13 +64,44 @@ const ProjectWizard = () => {
     }
   };
 
-  const handleGenerate = () => {
-    if (projectId) {
-      navigate(`/project/${projectId}/rendering`);
-    } else {
-      // Fallback or error handling if project ID is missing
-      console.error("Project ID is missing for rendering.");
-      navigate("/project/demo/rendering"); // Fallback to demo
+  const handleFinalSubmit = async () => {
+    if (!projectId) {
+      alert('프로젝트 ID가 없습니다. 스크립트 단계를 먼저 완료해주세요.');
+      return;
+    }
+    try {
+      // 1. 각 슬라이드에 TTS 생성
+      const slidesWithAudio = await Promise.all(
+        slides.map(async (slide) => {
+          const { audioUrl, duration } = await generateTTS(
+            slide.text,
+            settings.voice
+          );
+          return {
+            ...slide,
+            audio_url: audioUrl,
+            duration_seconds: duration
+          };
+        })
+      );
+
+      // 2. 프로젝트 업데이트
+      await updateProject.mutateAsync({
+        id: projectId,
+        updates: {
+          slides: slidesWithAudio,
+          settings
+        }
+      });
+
+      // 3. 렌더링 시작
+      const { jobId } = await startRender(projectId);
+
+      // 4. 렌더링 페이지로 이동
+      navigate(`/rendering/${jobId}`);
+    } catch (error) {
+      console.error('Failed to start rendering:', error);
+      alert('영상 생성 시작 실패');
     }
   };
 
@@ -161,7 +194,7 @@ const ProjectWizard = () => {
               다음 단계 <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button onClick={handleGenerate} className="gap-2">
+            <Button onClick={handleFinalSubmit} className="gap-2">
               🎬 영상 생성하기
             </Button>
           )}
