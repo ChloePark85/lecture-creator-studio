@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Video, ArrowLeft, ArrowRight, FileText, Layout, Mic } from "lucide-react";
@@ -6,6 +5,8 @@ import StepScript from "@/components/wizard/StepScript";
 import StepSlides from "@/components/wizard/StepSlides";
 import StepVoice from "@/components/wizard/StepVoice";
 import type { Slide, ProjectSettings, SlideTemplate, ColorTheme, VoiceType } from "@/types/project";
+import { useCreateProject, useUpdateProject } from '@/hooks/useProjects';
+import { autoSplitScript } from '@/lib/slides';
 
 const STEPS = [
   { label: "스크립트 입력", icon: FileText },
@@ -16,6 +17,7 @@ const STEPS = [
 const ProjectWizard = () => {
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
+  const [projectId, setProjectId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [script, setScript] = useState("");
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -29,25 +31,45 @@ const ProjectWizard = () => {
     enable_subtitles: true,
   });
 
-  const splitScript = () => {
-    const parts = script.split("---").map((s) => s.trim()).filter(Boolean);
-    const newSlides: Slide[] = parts.map((text, i) => ({
-      id: String(i + 1),
-      order: i + 1,
-      text,
-      template: settings.template,
-      duration_seconds: Math.max(3, Math.ceil(text.length / 15)),
-    }));
-    setSlides(newSlides.length > 0 ? newSlides : []);
+  const createProject = useCreateProject();
+  const updateProject = useUpdateProject();
+
+  const handleScriptSubmit = (title: string, script: string) => {
+    if (!projectId) {
+      createProject.mutate({ title, script }, {
+        onSuccess: (newProject) => {
+          setProjectId(newProject.id);
+          const newSlides = autoSplitScript(script);
+          setSlides(newSlides);
+          updateProject.mutate({ id: newProject.id, updates: { slides: newSlides } });
+          setStep(1);
+        },
+      });
+    } else {
+      // If project already exists, just update script and slides
+      const newSlides = autoSplitScript(script);
+      setSlides(newSlides);
+      updateProject.mutate({ id: projectId, updates: { title, script, slides: newSlides } });
+      setStep(1);
+    }
   };
 
   const handleNext = () => {
-    if (step === 0 && slides.length === 0) splitScript();
-    if (step < 2) setStep(step + 1);
+    if (step === 0) {
+      handleScriptSubmit(title, script);
+    } else if (step < 2) {
+      setStep(step + 1);
+    }
   };
 
   const handleGenerate = () => {
-    navigate("/project/demo/rendering");
+    if (projectId) {
+      navigate(`/project/${projectId}/rendering`);
+    } else {
+      // Fallback or error handling if project ID is missing
+      console.error("Project ID is missing for rendering.");
+      navigate("/project/demo/rendering"); // Fallback to demo
+    }
   };
 
   const totalDuration = slides.reduce((sum, s) => sum + (s.duration_seconds || 0), 0);
@@ -135,7 +157,7 @@ const ProjectWizard = () => {
             <ArrowLeft className="h-4 w-4" /> 이전
           </Button>
           {step < 2 ? (
-            <Button onClick={handleNext} className="gap-2" disabled={step === 0 && !script.trim()}>
+            <Button onClick={handleNext} className="gap-2" disabled={step === 0 && (!script.trim() || !title.trim())}>
               다음 단계 <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (

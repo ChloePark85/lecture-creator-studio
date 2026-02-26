@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Video, Plus, Download, Edit, Trash2, Loader2, CheckCircle2, FileEdit } from "lucide-react";
-import { MOCK_PROJECTS, type ProjectStatus } from "@/types/project";
+import { type ProjectStatus } from "@/types/project";
+import { useProjects, useDeleteProject } from '@/hooks/useProjects';
+
 
 const statusConfig: Record<ProjectStatus, { label: string; icon: React.ElementType; className: string }> = {
   draft: { label: "초안", icon: FileEdit, className: "text-muted-foreground bg-muted" },
@@ -17,6 +19,31 @@ const formatDuration = (seconds: number) => {
 };
 
 const Dashboard = () => {
+  const { data: projects, isLoading, isError } = useProjects();
+  const deleteProject = useDeleteProject();
+
+  const handleDelete = (id: string) => {
+    if (confirm('정말 삭제하시겠습니까?')) {
+      deleteProject.mutate(id);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex justify-center items-center h-screen text-destructive">
+        프로젝트를 불러오는 데 실패했습니다.
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-secondary/30">
       {/* Nav */}
@@ -46,7 +73,7 @@ const Dashboard = () => {
         </div>
 
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {MOCK_PROJECTS.map((project) => {
+          {projects?.map((project) => {
             const status = statusConfig[project.status];
             const StatusIcon = status.icon;
             return (
@@ -83,6 +110,14 @@ const Dashboard = () => {
                       <Button variant="outline" size="sm">진행률 확인</Button>
                     </Link>
                   )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="gap-1 text-destructive hover:text-destructive"
+                    onClick={() => handleDelete(project.id)}
+                  >
+                    <Trash2 className="h-3 w-3" /> 삭제
+                  </Button>
                 </div>
               </div>
             );
