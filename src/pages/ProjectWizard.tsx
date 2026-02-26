@@ -38,11 +38,15 @@ const ProjectWizard = () => {
   const updateProject = useUpdateProject();
 
   const handleScriptSubmit = (title: string, script: string) => {
+    // 빈 값 체크 및 기본값 설정
+    const finalTitle = title.trim() || "제목 없음";
+    const finalScript = script.trim() || "내용 없음";
+    
     if (!projectId) {
-      createProject.mutate({ title, script }, {
+      createProject.mutate({ title: finalTitle, script: finalScript }, {
         onSuccess: (newProject) => {
           setProjectId(newProject.id);
-          const newSlides = autoSplitScript(script);
+          const newSlides = autoSplitScript(finalScript);
           setSlides(newSlides);
           updateProject.mutate({ id: newProject.id, updates: { slides: newSlides } });
           setStep(1);
@@ -50,9 +54,9 @@ const ProjectWizard = () => {
       });
     } else {
       // If project already exists, just update script and slides
-      const newSlides = autoSplitScript(script);
+      const newSlides = autoSplitScript(finalScript);
       setSlides(newSlides);
-      updateProject.mutate({ id: projectId, updates: { title, script, slides: newSlides } });
+      updateProject.mutate({ id: projectId, updates: { title: finalTitle, script: finalScript, slides: newSlides } });
       setStep(1);
     }
   };
@@ -191,7 +195,7 @@ const ProjectWizard = () => {
             <ArrowLeft className="h-4 w-4" /> 이전
           </Button>
           {step < 2 ? (
-            <Button onClick={handleNext} className="gap-2" disabled={step === 0 && (!script.trim() || !title.trim())}>
+            <Button onClick={handleNext} className="gap-2">
               다음 단계 <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
