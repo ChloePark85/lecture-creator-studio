@@ -21,9 +21,7 @@ export function useCreateProject() {
   
   return useMutation({
     mutationFn: async (project: { title: string; script: string }) => {
-      // 임시: 로그인 없이도 작동하도록 고정 UUID 사용
-      const userId = (await supabase.auth.getUser()).data.user?.id || '00000000-0000-0000-0000-000000000000'
-      
+      // 임시: 로그인 없이도 작동하도록 user_id를 생략 (nullable)
       const { data, error } = await supabase
         .from('projects')
         .insert({
@@ -32,13 +30,16 @@ export function useCreateProject() {
           status: 'draft',
           slides: [],
           settings: {},
-          duration_seconds: 0,
-          user_id: userId
+          duration_seconds: 0
+          // user_id 생략 - null로 insert됨
         })
         .select()
         .single()
       
-      if (error) throw error
+      if (error) {
+        console.error('Create project error:', error)
+        throw error
+      }
       return data
     },
     onSuccess: () => {
