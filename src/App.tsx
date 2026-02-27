@@ -22,9 +22,9 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/project/new" element={<ProjectWizard />} />
-          <Route path="/project/:id" element={<ProjectWizard />} />
-          <Route path="/project/:id/rendering" element={<RenderingPage />} />
-          <Route path="/project/:id/complete" element={<CompletePage />} />
+          <Route path="/project/:projectId" element={<ProjectWizard />} />
+          <Route path="/project/:projectId/rendering" element={<RenderingPage />} />
+          <Route path="/project/:projectId/complete" element={<CompletePage />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
