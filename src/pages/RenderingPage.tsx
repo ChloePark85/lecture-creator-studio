@@ -23,7 +23,7 @@ export default function RenderingPage() {
         // 완료되면 완료 페이지로 이동
         if (newStatus.status === 'completed') {
           clearInterval(interval)
-          navigate(`/complete/${projectId}`)
+          navigate(`/project/${projectId}/complete`)
         }
 
         // 실패하면 에러 표시

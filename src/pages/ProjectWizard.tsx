@@ -116,7 +116,7 @@ const ProjectWizard = () => {
       const { jobId } = await startRender(projectId);
 
       // 4. 렌더링 페이지로 이동
-      navigate(`/rendering/${jobId}`);
+      navigate(`/project/${jobId}/rendering`);
     } catch (error) {
       console.error('Failed to start rendering:', error);
       alert('영상 생성 시작 실패');
